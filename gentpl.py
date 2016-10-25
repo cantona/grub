@@ -74,7 +74,7 @@ GROUPS["terminfomodule"]   = GRUB_PLATFORMS[:];
 for i in GROUPS["terminfoinkernel"]: GROUPS["terminfomodule"].remove(i)
 
 # Flattened Device Trees (FDT)
-GROUPS["fdt"] = [ "arm64_efi", "arm_uboot", "arm_efi" ]
+GROUPS["fdt"] = [ "arm64_efi", "arm_uboot", "arm_efi", "i386_pc", "i386_efi", "x86_64_efi" ]
 
 # Needs software helpers for division
 # Must match GRUB_DIVISION_IN_SOFTWARE in misc.h

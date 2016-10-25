@@ -19,6 +19,7 @@
 #include <grub/loader.h>
 #include <grub/memory.h>
 #include <grub/normal.h>
+#include <grub/fdt.h>
 #include <grub/file.h>
 #include <grub/disk.h>
 #include <grub/err.h>
@@ -79,6 +80,7 @@ static grub_efi_uintn_t efi_mmap_size;
 #else
 static const grub_size_t efi_mmap_size = 0;
 #endif
+static void *loaded_fdt;
 
 /* FIXME */
 #if 0
@@ -1126,13 +1128,71 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   linux_params.ramdisk_size = size;
   linux_params.root_dev = 0x0100; /* XXX */
 
+  if (loaded_fdt)
+	  linux_params.setup_data = (grub_uint64_t)loaded_fdt;
+
  fail:
   grub_initrd_close (&initrd_ctx);
 
   return grub_errno;
 }
 
-static grub_command_t cmd_linux, cmd_initrd;
+static grub_err_t
+grub_cmd_devicetree (grub_command_t cmd __attribute__ ((unused)),
+		     int argc, char *argv[])
+{
+  grub_file_t dtb;
+  void *blob = NULL;
+  int size;
+
+  if (loaded_fdt)
+    grub_free (loaded_fdt);
+  loaded_fdt = NULL;
+
+  /* No arguments means "use firmware FDT".  */
+  if (argc == 0)
+    {
+      return GRUB_ERR_NONE;
+    }
+
+  dtb = grub_file_open (argv[0]);
+  if (!dtb)
+    goto out;
+
+  size = grub_file_size (dtb);
+  blob = grub_malloc (size);
+  if (!blob)
+    goto out;
+
+  if (grub_file_read (dtb, blob, size) < size)
+    {
+      if (!grub_errno)
+	grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"), argv[0]);
+      goto out;
+    }
+
+  if (grub_fdt_check_header (blob, size) != 0)
+    {
+      grub_error (GRUB_ERR_BAD_OS, N_("invalid device tree"));
+      goto out;
+    }
+
+out:
+  if (dtb)
+    grub_file_close (dtb);
+
+  if (blob)
+    {
+      if (grub_errno == GRUB_ERR_NONE)
+	loaded_fdt = blob;
+      else
+	grub_free (blob);
+    }
+
+  return grub_errno;
+}
+
+static grub_command_t cmd_linux, cmd_initrd, cmd_devicetree;
 
 GRUB_MOD_INIT(linux)
 {
@@ -1140,6 +1200,8 @@ GRUB_MOD_INIT(linux)
 				     0, N_("Load Linux."));
   cmd_initrd = grub_register_command ("initrd", grub_cmd_initrd,
 				      0, N_("Load initrd."));
+  cmd_devicetree = grub_register_command ("devicetree", grub_cmd_devicetree,
+				      0, N_("Load DTB file."));
   my_mod = mod;
 }
 
@@ -1147,4 +1209,5 @@ GRUB_MOD_FINI(linux)
 {
   grub_unregister_command (cmd_linux);
   grub_unregister_command (cmd_initrd);
+  grub_unregister_command (cmd_devicetree);
 }
