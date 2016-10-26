@@ -81,6 +81,7 @@ static grub_efi_uintn_t efi_mmap_size;
 static const grub_size_t efi_mmap_size = 0;
 #endif
 static void *loaded_fdt;
+static struct linux_kernel_setup_data linux_kernel_setup_data;
 
 /* FIXME */
 #if 0
@@ -823,7 +824,10 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 	  //linux_params.setup_data = (grub_uint64_t)loaded_fdt;
 	  // XXX: use EFI tables
 #else
-	  linux_params.setup_data = (grub_uint64_t)loaded_fdt;
+	  linux_params.setup_data = (grub_uint64_t) & linux_kernel_setup_data;
+	  linux_kernel_setup_data.type = 2 /* SETUP_DTB */;
+	  linux_kernel_setup_data.len = sizeof( grub_uint64_t );
+	  memcpy( & linux_kernel_setup_data.data[ 0 ], loaded_fdt, sizeof( grub_uint64_t ) );
 #endif
   }
 

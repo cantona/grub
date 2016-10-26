@@ -310,6 +310,14 @@ struct linux_kernel_params
   struct grub_e820_mmap e820_map[(0x400 - 0x2d0) / 20];	/* 2d0 */
 
 } GRUB_PACKED;
+
+struct linux_kernel_setup_data {
+	grub_uint64_t next;
+	grub_uint32_t type;
+	grub_uint32_t len;
+	grub_uint8_t data[0];
+};
+
 #endif /* ! ASM_FILE */
 
 #endif /* ! GRUB_LINUX_MACHINE_HEADER */
