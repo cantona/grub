@@ -818,6 +818,15 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
   linux_params.type_of_loader = GRUB_LINUX_BOOT_LOADER_TYPE;
 
+  if (loaded_fdt) {
+#ifdef GRUB_MACHINE_EFI
+	  //linux_params.setup_data = (grub_uint64_t)loaded_fdt;
+	  // XXX: use EFI tables
+#else
+	  linux_params.setup_data = (grub_uint64_t)loaded_fdt;
+#endif
+  }
+
   /* These two are used (instead of cmd_line_ptr) by older versions of Linux,
      and otherwise ignored.  */
   linux_params.cl_magic = GRUB_LINUX_CL_MAGIC;
@@ -1127,9 +1136,6 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   linux_params.ramdisk_image = initrd_mem_target;
   linux_params.ramdisk_size = size;
   linux_params.root_dev = 0x0100; /* XXX */
-
-  if (loaded_fdt)
-	  linux_params.setup_data = (grub_uint64_t)loaded_fdt;
 
  fail:
   grub_initrd_close (&initrd_ctx);
