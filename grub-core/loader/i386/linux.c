@@ -823,7 +823,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 	  //linux_params.setup_data = (grub_uint64_t)loaded_fdt;
 	  // XXX: use EFI tables
 #else
-	  linux_params.setup_data = (grub_uint64_t) loaded_fdt - offsetof(struct linux_kernel_setup_data, data);
+	  linux_params.setup_data = (grub_uint64_t) loaded_fdt - sizeof(struct linux_kernel_setup_data);
 #endif
   }
 
