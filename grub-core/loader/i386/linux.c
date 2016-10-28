@@ -820,8 +820,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
   if (loaded_fdt) {
 #ifdef GRUB_MACHINE_EFI
-	  //linux_params.setup_data = (grub_uint64_t)loaded_fdt;
-	  // XXX: use EFI tables
+	  // Not yet implemented
 #else
 	  linux_params.setup_data = (grub_uint64_t) loaded_fdt - sizeof(struct linux_kernel_setup_data);
 #endif
@@ -1154,10 +1153,8 @@ grub_cmd_devicetree (grub_command_t cmd __attribute__ ((unused)),
   struct linux_kernel_setup_data *linux_kernel_setup_data;
 #endif
 
-  if (loaded_fdt) {
-	grub_dprintf ("devicetree", "Freeing existing loaded_fdt@%p\n", loaded_fdt);
+  if (loaded_fdt)
     grub_free (loaded_fdt);
-  }
   loaded_fdt = NULL;
 
   /* No arguments means "use firmware FDT".  */
@@ -1167,24 +1164,17 @@ grub_cmd_devicetree (grub_command_t cmd __attribute__ ((unused)),
     }
 
   dtb = grub_file_open (argv[0]);
-  if (!dtb) {
-    grub_dprintf ("devicetree", "Unable to open file '%s'\n", argv[0]);
+  if (!dtb)
     goto out;
-  }
 
   size = grub_file_size (dtb);
-  grub_dprintf ("devicetree", "File '%s' has size %u\n", argv[0], size);
 #ifdef GRUB_MACHINE_EFI
   blob = grub_malloc (size);
-  grub_dprintf ("devicetree", "Allocating %u bytes for fdt\n", size);
 #else
   blob = grub_malloc (size + sizeof(struct linux_kernel_setup_data));
-  grub_dprintf ("devicetree", "Allocating %u bytes for setup_data + fdt\n", size);
 #endif
-  if (!blob) {
-	grub_dprintf ("devicetree", "Failed to allocate memory\n");
+  if (!blob)
     goto out;
-  }
 
   if (grub_file_read (dtb, blob, size) < size)
     {
@@ -1211,15 +1201,12 @@ out:
     	  // not yet implemented
     	  loaded_fdt = blob;
 #else
-    	  grub_dprintf ("devicetree", "Moving fdt by %u bytes from %p to %p to make room for setup_data\n", (unsigned) sizeof( struct linux_kernel_setup_data ), blob, (grub_uint8_t *)blob + sizeof( struct linux_kernel_setup_data ) );
     	  grub_memmove( (grub_uint8_t *)blob + sizeof( struct linux_kernel_setup_data ), blob, size );
 	      loaded_fdt = (grub_uint8_t *)blob + sizeof( struct linux_kernel_setup_data );
-	      grub_dprintf ("devicetree", "loaded_fdt @ %p\n", loaded_fdt );
 	      linux_kernel_setup_data = blob;
 	      linux_kernel_setup_data->next = (grub_uint64_t)NULL;
 	      linux_kernel_setup_data->type = 2 /* SETUP_DTB */;
 	      linux_kernel_setup_data->len = size;
-	      grub_dprintf ("devicetree", "setup_data @ %p: { next: %p, type: %u, len: %u }\n", linux_kernel_setup_data, (void *)linux_kernel_setup_data->next, linux_kernel_setup_data->type, linux_kernel_setup_data->len );
 #endif
         }
       else
